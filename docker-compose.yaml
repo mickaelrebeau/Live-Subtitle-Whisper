@@ -1,0 +1,8 @@
+version: "3.7"
+services:
+  redis:
+    image: redis:latest
+    environment:
+      - ALLOW_EMPTY_PASSWORD=yes
+    ports:
+      - 6379:6379
