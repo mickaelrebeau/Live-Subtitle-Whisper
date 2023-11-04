@@ -7,7 +7,6 @@ import redis
 import json
 from deep_translator import GoogleTranslator
 
-r = redis.Redis(host='localhost', port=6379, db=0)
 
 def record():
     freq = 44100
@@ -44,17 +43,6 @@ def transcribe():
             text = {"text": translated}
             f.write(json.dumps(text))
             f.close()
-            
-            r.publish("textanalyzer", result.text)
-
-def loadfile(directory):
-    content = {}
-    for file in os.scandir(directory):
-        with open(file) as f:
-            filename = os.path.split(file)[1]
-            contents = f.read()
-            content[filename] = contents
-    return content
 
 if __name__ == '__main__':
     to_mic, to_whisper = multiprocessing.Pipe()
