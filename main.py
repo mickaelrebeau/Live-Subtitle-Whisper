@@ -1,9 +1,8 @@
+import time
 import sounddevice as sd
 import wavio as wv
 import whisper
 import multiprocessing
-import os
-import redis
 import json
 from deep_translator import GoogleTranslator
 
@@ -23,9 +22,10 @@ def record():
         # Convert the NumPy array to audio file
         print('Converting to wav...')
         wv.write("recording.wav", recording, freq, sampwidth=2)
+        time.sleep(1)
 
 def transcribe():
-    model = whisper.load_model("small")
+    model = whisper.load_model("base")
 
     while True:
         audio = whisper.load_audio("recording.wav")
@@ -39,10 +39,10 @@ def transcribe():
             
             translated = GoogleTranslator(source='fr', target='en').translate(result.text)
 
-            f = open("recording.json","w",encoding="utf-8")
-            text = {"text": translated}
-            f.write(json.dumps(text))
-            f.close()
+            with open('recording.json', 'w') as f:
+                json.dump({'text': translated}, f)
+
+            time.sleep(3)
 
 if __name__ == '__main__':
     to_mic, to_whisper = multiprocessing.Pipe()
