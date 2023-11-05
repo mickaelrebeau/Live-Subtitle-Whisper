@@ -1,14 +1,14 @@
+import io
+import numpy as np
 import sounddevice as sd
-import wavio as wv
 import whisper
 import multiprocessing
-import os
-import redis
 import json
+import logging
 from deep_translator import GoogleTranslator
 
 
-def record():
+def record(connexion):
     freq = 44100
     duration = 5
 
@@ -22,14 +22,19 @@ def record():
 
         # Convert the NumPy array to audio file
         print('Converting to wav...')
-        wv.write("recording.wav", recording, freq, sampwidth=2)
+        
+        buffer = io.BytesIO()
+        buffer.write(recording.tobytes())
+        connexion.send(buffer.getvalue())
 
-def transcribe():
-    model = whisper.load_model("small")
+def transcribe(connexion):
+    model = whisper.load_model("base")
 
     while True:
-        audio = whisper.load_audio("recording.wav")
-        audio = whisper.pad_or_trim(audio)
+        buffer = connexion.recv()
+    
+        bufferFloatArray = whisper.load_audio(buffer)
+        audio = whisper.pad_or_trim(bufferFloatArray)
         
         mel = whisper.log_mel_spectrogram(audio).to(model.device)
         options = whisper.DecodingOptions(language= 'fr', fp16=False)
@@ -46,8 +51,8 @@ def transcribe():
 
 if __name__ == '__main__':
     to_mic, to_whisper = multiprocessing.Pipe()
-    mic = multiprocessing.Process(target=record)
-    whisp = multiprocessing.Process(target=transcribe)
+    mic = multiprocessing.Process(target=record , args=(to_whisper, ))
+    whisp = multiprocessing.Process(target=transcribe , args=(to_mic, ))
     mic.start()
     whisp.start()
     mic.join()
